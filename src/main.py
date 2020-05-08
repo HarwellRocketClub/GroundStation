@@ -1,24 +1,22 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow
-from PyQt5 import uic
+from PySide2.QtWidgets import QApplication, QWidget, QMainWindow
 from src.rocket_status import RocketStatus
+from src.window import WindowUI
 
 
 class Window(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        uic.loadUi("ui/main.ui", self)
-        print(self.children())
+        self.ui = WindowUI(self)
 
     def set_rocket_status(self, status: RocketStatus):
-        rocket_status_text = self.findChild(QWidget, name="rocket_status_text")
-        rocket_status_text.setStyleSheet(
+        self.ui.rocket_status_text.setStyleSheet(
+            self.ui.rocket_status_text_base_stylesheet +
             "color: #222222;"
-            "background-color: {};"
-            "font: 18pt;".format(status.value["colour"])
+            "background-color: {};".format(status.value["colour"])
         )
-        rocket_status_text.setText(status.value["text"])
+        self.ui.rocket_status_text.setText(status.value["text"])
 
 
 def window():
