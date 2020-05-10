@@ -1,9 +1,11 @@
 import math
 
-from PySide2.QtCore import QMetaObject, QRect, QUrl, Qt
-from PySide2.QtWidgets import QWidget, QStatusBar, QGridLayout, QLabel, QMenuBar, QVBoxLayout, QTabWidget
-
+from PySide2.QtCore import QMetaObject, QRect, QUrl
+from PySide2.QtWidgets import QWidget, QStatusBar, QMenuBar, QVBoxLayout, QTabWidget
 from PySide2.QtWebEngineWidgets import QWebEngineView
+
+from src.rocket_status import RocketStatusUI, RocketStatus
+from src.server import ServerUI
 
 
 class WindowUI(object):
@@ -13,12 +15,12 @@ class WindowUI(object):
         if not main_window.objectName():
             main_window.setObjectName("MainWindow")
         main_window.resize(self.width, self.height)
+
         self.base_widget = QWidget(main_window)
         self.base_widget.setObjectName("base_widget")
-
         self.base_layout = QVBoxLayout()
 
-        self.set_up_status(parent_layout=self.base_layout)
+        self.rocket_status = RocketStatusUI(self.base_layout)
         self.set_up_tabs(
             parent_layout=self.base_layout,
             left=0, top=self.height // 5,
@@ -33,18 +35,8 @@ class WindowUI(object):
 
         self.base_widget.setLayout(self.base_layout)
 
-    def set_up_status(self, parent_layout):
-        self.rocket_status_text = QLabel()
-        self.rocket_status_text.setObjectName("rocket_status_text")
-        self.rocket_status_text.setLayoutDirection(Qt.LeftToRight)
-        self.rocket_status_text.setAlignment(Qt.AlignCenter)
-        self.rocket_status_text.setText("Loading...")
-        self.rocket_status_text_base_stylesheet = "padding: 15px; font: 18pt;"
-        self.rocket_status_text.setStyleSheet(self.rocket_status_text_base_stylesheet)
-        parent_layout.addWidget(self.rocket_status_text)
-
     def set_up_tabs(self, parent_layout, left, top, width, height):
-        self.tab_widget = TabUI(left, top, width, height)
+        self.tab_widget = TabUI(left, top, width, height, self)
         parent_layout.addWidget(self.tab_widget)
 
     def set_up_bars(self, main_window):
@@ -67,19 +59,24 @@ class WindowUI(object):
 
 class TabUI(QWidget):
 
-    def __init__(self, left, top, width, height):
+    def __init__(self, left, top, width, height, main_ui: WindowUI):
         super().__init__()
+        self.main_ui = main_ui
+
         self.layout = QVBoxLayout(self)
         self.tabs = QTabWidget()
 
         # Initialise tabs
         self.map_tab = self.set_up_map_tab(left, top, width, height)
         self.data_tab = QWidget()
+        self.server_tab = ServerUI(left, top, width, height)
+        self.server_tab.attach_connection_listener(self)
         self.tabs.resize(width, height)
 
         # Add tabs
         self.tabs.addTab(self.map_tab, "Rocket Tracker")
         self.tabs.addTab(self.data_tab, "Data")
+        self.tabs.addTab(self.server_tab, "Server")
 
         # Add tabs to widget
         self.layout.addWidget(self.tabs)
@@ -92,9 +89,8 @@ class TabUI(QWidget):
         map_tab.setUrl(QUrl("https://www.google.com/maps"))
         return map_tab
 
-
-
-
-
-
-
+    def update_connection(self, is_connected: bool):
+        if is_connected:
+            self.main_ui.rocket_status.set_rocket_status(RocketStatus.READY_FOR_FLIGHT)
+        else:
+            self.main_ui.rocket_status.set_rocket_status(RocketStatus.NO_SERVER_CONNECTION)
