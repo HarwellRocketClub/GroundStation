@@ -19,7 +19,6 @@ def window():
     app = QApplication(sys.argv)
     base_widget = Window()
     base_widget.show()
-    base_widget.set_rocket_status(RocketStatus.NO_SERVER_CONNECTION)
     sys.exit(app.exec_())
 
 

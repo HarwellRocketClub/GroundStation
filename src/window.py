@@ -20,12 +20,13 @@ class WindowUI(object):
         self.base_widget.setObjectName("base_widget")
         self.base_layout = QVBoxLayout()
 
+        # Set up the main UI elements
         self.rocket_status = RocketStatusUI(self.base_layout)
-        self.set_up_tabs(
-            parent_layout=self.base_layout,
+        self.tab_widget = TabUI(
             left=0, top=self.height // 5,
-            width=self.width, height=math.floor(self.height * 0.5)
-        )
+            width=self.width, height=math.floor(self.height * 0.5),
+            main_ui=self)
+        self.base_layout.addWidget(self.tab_widget)
         self.set_up_bars(main_window)
 
         main_window.setWindowTitle("Red Kite Avionics Ground Station")
@@ -34,10 +35,6 @@ class WindowUI(object):
         QMetaObject.connectSlotsByName(main_window)
 
         self.base_widget.setLayout(self.base_layout)
-
-    def set_up_tabs(self, parent_layout, left, top, width, height):
-        self.tab_widget = TabUI(left, top, width, height, self)
-        parent_layout.addWidget(self.tab_widget)
 
     def set_up_bars(self, main_window):
         self.status_bar = QStatusBar(main_window)
@@ -70,7 +67,7 @@ class TabUI(QWidget):
         self.map_tab = self.set_up_map_tab(left, top, width, height)
         self.data_tab = QWidget()
         self.server_tab = ServerUI(left, top, width, height)
-        self.server_tab.attach_connection_listener(self)
+        self.server_tab.attach_status_listener(self)
         self.tabs.resize(width, height)
 
         # Add tabs
@@ -89,8 +86,5 @@ class TabUI(QWidget):
         map_tab.setUrl(QUrl("https://www.google.com/maps"))
         return map_tab
 
-    def update_connection(self, is_connected: bool):
-        if is_connected:
-            self.main_ui.rocket_status.set_rocket_status(RocketStatus.READY_FOR_FLIGHT)
-        else:
-            self.main_ui.rocket_status.set_rocket_status(RocketStatus.NO_SERVER_CONNECTION)
+    def update_status(self, status: RocketStatus):
+        self.main_ui.rocket_status.set_rocket_status(status)
